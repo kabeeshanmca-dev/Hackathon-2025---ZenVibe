@@ -1,12 +1,34 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import type { ModerationResult } from '../types';
 
-const API_KEY = process.env.API_KEY;
+// This function safely accesses the environment variable, preventing a crash
+// in browser environments where `process` is not defined. This is a common
+// issue when deploying to platforms like Vercel.
+const getApiKey = (): string | undefined => {
+  try {
+    // Check if `process` and `process.env` exist before trying to access the API key.
+    if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
+      return process.env.API_KEY;
+    }
+    return undefined;
+  } catch (e) {
+    console.error("Could not access process.env.API_KEY. This is normal in some environments.", e);
+    return undefined;
+  }
+};
+
+const API_KEY = getApiKey();
 export let ai: GoogleGenAI | null = null;
 
+// Initialize the AI service only if the key is available.
+// A try/catch block adds an extra layer of protection against initialization errors.
 if (API_KEY) {
-  ai = new GoogleGenAI({ apiKey: API_KEY });
+  try {
+    ai = new GoogleGenAI({ apiKey: API_KEY });
+  } catch(e) {
+    console.error("Failed to initialize GoogleGenAI, AI features will be disabled.", e);
+    ai = null;
+  }
 } else {
   console.error("CRITICAL: API_KEY environment variable not set. ZenVibe's AI features will be disabled.");
 }
