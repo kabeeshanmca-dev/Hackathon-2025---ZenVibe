@@ -11,6 +11,7 @@ import WellnessQuiz from './components/WellnessQuiz';
 import type { Post, Tab, User } from './types';
 import { generateSupportiveReply } from './services/geminiService';
 import { MOCK_USERS } from './constants';
+import { safeLocalStorageGet, safeLocalStorageSet, safeLocalStorageRemove } from './utils/storage';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>('discussion');
@@ -22,14 +23,14 @@ const App: React.FC = () => {
   
   useEffect(() => {
     // Check for logged in user in local storage
-    const savedUser = localStorage.getItem('zenVibeUser');
+    const savedUser = safeLocalStorageGet('zenVibeUser');
     if (savedUser) {
       try {
         const user = JSON.parse(savedUser);
         setCurrentUser(user);
         
         // Check for score
-        const savedScore = localStorage.getItem('zenVibeScore');
+        const savedScore = safeLocalStorageGet('zenVibeScore');
         if (savedScore) {
           setScore(parseFloat(savedScore));
         } else {
@@ -38,8 +39,8 @@ const App: React.FC = () => {
 
       } catch (e) {
         console.error("Failed to parse user from localStorage", e);
-        localStorage.removeItem('zenVibeUser');
-        localStorage.removeItem('zenVibeScore');
+        safeLocalStorageRemove('zenVibeUser');
+        safeLocalStorageRemove('zenVibeScore');
       }
     }
   }, []);
@@ -119,15 +120,15 @@ const App: React.FC = () => {
       avatarId,
     };
     setCurrentUser(newUser);
-    localStorage.setItem('zenVibeUser', JSON.stringify(newUser));
-    localStorage.removeItem('zenVibeScore');
+    safeLocalStorageSet('zenVibeUser', JSON.stringify(newUser));
+    safeLocalStorageRemove('zenVibeScore');
     setScore(null);
     setShowQuiz(true); // Show quiz for new users
   };
 
   const handleQuizComplete = (newScore: number) => {
     setScore(newScore);
-    localStorage.setItem('zenVibeScore', newScore.toString());
+    safeLocalStorageSet('zenVibeScore', newScore.toString());
     setShowQuiz(false);
   };
   
