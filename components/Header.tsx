@@ -9,7 +9,7 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ score, onRetakeQuiz, onlineUsers }) => {
   return (
-    <header className="bg-slate-900/80 backdrop-blur-sm fixed top-0 left-0 right-0 z-10 border-b border-slate-700">
+    <header className="bg-slate-900/80 backdrop-blur-sm sticky top-0 left-0 right-0 z-10 border-b border-slate-700">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">

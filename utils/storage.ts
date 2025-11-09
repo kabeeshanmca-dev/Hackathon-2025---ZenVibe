@@ -1,6 +1,17 @@
 // A simple wrapper around localStorage to handle potential DOMExceptions
 // when localStorage is disabled or unavailable.
 
+export const isLocalStorageAvailable = (): boolean => {
+  try {
+    const testKey = 'zenvibe_storage_test';
+    localStorage.setItem(testKey, testKey);
+    localStorage.removeItem(testKey);
+    return true;
+  } catch (e) {
+    return false;
+  }
+};
+
 export const safeLocalStorageGet = (key: string): string | null => {
   try {
     return localStorage.getItem(key);

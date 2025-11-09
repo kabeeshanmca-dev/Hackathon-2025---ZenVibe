@@ -8,10 +8,11 @@ import Help from './components/Help';
 import Chatbot from './components/Chatbot';
 import SignUp from './components/SignUp';
 import WellnessQuiz from './components/WellnessQuiz';
+import StorageWarning from './components/StorageWarning';
 import type { Post, Tab, User } from './types';
 import { generateSupportiveReply } from './services/geminiService';
 import { MOCK_USERS } from './constants';
-import { safeLocalStorageGet, safeLocalStorageSet, safeLocalStorageRemove } from './utils/storage';
+import { isLocalStorageAvailable, safeLocalStorageGet, safeLocalStorageSet, safeLocalStorageRemove } from './utils/storage';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>('discussion');
@@ -20,8 +21,14 @@ const App: React.FC = () => {
   const [showQuiz, setShowQuiz] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState(0);
   const [isHelpLocked, setIsHelpLocked] = useState(false);
+  const [storageAvailable, setStorageAvailable] = useState(true);
   
   useEffect(() => {
+    if (!isLocalStorageAvailable()) {
+      setStorageAvailable(false);
+      return; // Don't attempt to load from storage if it's not available
+    }
+
     // Check for logged in user in local storage
     const savedUser = safeLocalStorageGet('zenVibeUser');
     if (savedUser) {
@@ -191,16 +198,23 @@ const App: React.FC = () => {
   };
 
   if (!currentUser) {
-    return <SignUp onLogin={handleLogin} />;
+    return <>
+      {!storageAvailable && <StorageWarning />}
+      <SignUp onLogin={handleLogin} />
+    </>;
   }
   
   if (showQuiz) {
-    return <WellnessQuiz onComplete={handleQuizComplete} />;
+    return <>
+      {!storageAvailable && <StorageWarning />}
+      <WellnessQuiz onComplete={handleQuizComplete} />
+    </>;
   }
   
   if (isHelpLocked) {
     return (
         <div className="bg-slate-900 text-slate-200 min-h-screen font-sans flex flex-col">
+            {!storageAvailable && <StorageWarning />}
             <main className="flex-grow container mx-auto px-4 py-8 flex items-center justify-center">
                 <div className="max-w-2xl mx-auto w-full">
                   <Help />
@@ -212,8 +226,9 @@ const App: React.FC = () => {
 
   return (
     <div className="bg-slate-900 text-slate-200 min-h-screen font-sans flex flex-col">
+      {!storageAvailable && <StorageWarning />}
       <Header score={score} onRetakeQuiz={handleRetakeQuiz} onlineUsers={onlineUsers} />
-      <main className="flex-grow container mx-auto px-4 pt-20 pb-24 md:pt-24 md:pb-8">
+      <main className="flex-grow container mx-auto px-4 pt-4 pb-24 md:pt-8 md:pb-8">
         <div className="max-w-2xl mx-auto">
            {renderContent()}
         </div>
