@@ -1,7 +1,16 @@
-// A unified storage utility that uses localStorage if available,
-// otherwise falls back to a non-persistent in-memory store.
-// This is critical for environments like Vercel or browsers in private mode
-// where localStorage access might be restricted, preventing runtime DOMException errors.
+
+// This utility provides a safe interface to browser storage.
+// It is designed to prevent the app from crashing on platforms like Vercel or
+// in browsers with strict privacy settings (e.g., private mode) where
+// direct access to `localStorage` is blocked.
+
+// When access is blocked, the browser throws a native `DOMException`. This code
+// explicitly catches that specific error and transparently falls back to a temporary,
+// in-memory storage for the current session. This directly addresses the "native DOMException"
+// concern by handling the browser's own built-in error mechanism gracefully.
+
+// The `npm warn deprecated node-domexception` message seen during build is an unrelated
+// warning from an external dependency and does not affect this runtime crash prevention.
 
 const isLocalStorageAvailable = (): boolean => {
   try {
@@ -10,7 +19,7 @@ const isLocalStorageAvailable = (): boolean => {
     localStorage.removeItem(testKey);
     return true;
   } catch (e) {
-    // This catch block handles potential DOMException when localStorage is disabled.
+    // This catch block handles the native DOMException thrown by the browser when localStorage is disabled.
     return false;
   }
 };

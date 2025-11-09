@@ -3,12 +3,13 @@ import { GoogleGenAI, Type } from "@google/genai";
 import type { ModerationResult } from '../types';
 
 const API_KEY = process.env.API_KEY;
+export let ai: GoogleGenAI | null = null;
 
-if (!API_KEY) {
-  throw new Error("API_KEY environment variable not set");
+if (API_KEY) {
+  ai = new GoogleGenAI({ apiKey: API_KEY });
+} else {
+  console.error("CRITICAL: API_KEY environment variable not set. ZenVibe's AI features will be disabled.");
 }
-
-export const ai = new GoogleGenAI({ apiKey: API_KEY });
 
 const moderationSchema = {
   type: Type.OBJECT,
@@ -30,6 +31,9 @@ const moderationSchema = {
 };
 
 export const moderateContent = async (content: string): Promise<ModerationResult> => {
+  if (!ai) {
+    return { isPositive: false, reason: "Moderation service is currently unavailable.", isSevere: false };
+  }
   try {
     const response = await ai.models.generateContent({
         model: "gemini-2.5-flash",
@@ -56,6 +60,9 @@ export const moderateContent = async (content: string): Promise<ModerationResult
 };
 
 export const generateSupportiveReply = async (postContent: string): Promise<string> => {
+    if (!ai) {
+      return "Thanks for sharing. It takes courage to open up, and you're not alone in feeling this way.";
+    }
     try {
          const response = await ai.models.generateContent({
             model: "gemini-2.5-flash",
@@ -78,6 +85,9 @@ export const generateSupportiveReply = async (postContent: string): Promise<stri
 };
 
 export const getQuizFeedback = async (score: number): Promise<string> => {
+    if (!ai) {
+      return "Thank you for sharing how you feel. Remember that every step, big or small, is part of your journey.";
+    }
     try {
         const response = await ai.models.generateContent({
             model: "gemini-2.5-flash",

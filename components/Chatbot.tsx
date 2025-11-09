@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import type { Chat } from '@google/genai';
 import type { ChatMessage, User } from '../types';
@@ -27,23 +28,34 @@ const Chatbot: React.FC<ChatbotProps> = ({ currentUser }) => {
             : MOCK_USERS['user-1']; // Fallback
         setChatBuddy(buddy);
 
-        // Create a new chat session with a personalized system instruction
-        const chatSession = ai.chats.create({
-            model: 'gemini-2.5-flash',
-            config: {
-                systemInstruction: `You are ${buddy.name}, a friendly and empathetic peer on the ZenVibe app. Your goal is to be a supportive, non-judgmental friend. Use a warm, encouraging, and slightly casual tone, like you're talking to a friend. Use emojis where appropriate. Keep your responses concise (usually 2-3 sentences) and easy to understand. Never give medical advice, but you can gently suggest talking to a trusted adult or professional if a user seems to be in serious distress. Your primary role is to listen, validate feelings, and offer positive encouragement.`,
-            },
-        });
-        setChat(chatSession);
+        if (ai) {
+          // Create a new chat session with a personalized system instruction
+          const chatSession = ai.chats.create({
+              model: 'gemini-2.5-flash',
+              config: {
+                  systemInstruction: `You are ${buddy.name}, a friendly and empathetic peer on the ZenVibe app. Your goal is to be a supportive, non-judgmental friend. Use a warm, encouraging, and slightly casual tone, like you're talking to a friend. Use emojis where appropriate. Keep your responses concise (usually 2-3 sentences) and easy to understand. Never give medical advice, but you can gently suggest talking to a trusted adult or professional if a user seems to be in serious distress. Your primary role is to listen, validate feelings, and offer positive encouragement.`,
+              },
+          });
+          setChat(chatSession);
 
-        // Set the initial greeting message from the chat buddy
-        setMessages([
-            {
-                id: 'initial',
-                text: `Hey! I'm ${buddy.name}. Feel free to talk about anything on your mind. I'm here to listen. 😊`,
-                sender: 'ai'
-            }
-        ]);
+          // Set the initial greeting message from the chat buddy
+          setMessages([
+              {
+                  id: 'initial',
+                  text: `Hey! I'm ${buddy.name}. Feel free to talk about anything on your mind. I'm here to listen. 😊`,
+                  sender: 'ai'
+              }
+          ]);
+        } else {
+            // Handle the case where AI is not available
+            setMessages([
+              {
+                  id: 'initial-error',
+                  text: "The chat feature is currently unavailable. I'm still here if you need to talk, but I can't connect to my AI helper right now.",
+                  sender: 'ai'
+              }
+            ]);
+        }
     }, [currentUser.name]);
 
 
@@ -133,11 +145,11 @@ const Chatbot: React.FC<ChatbotProps> = ({ currentUser }) => {
                         onChange={(e) => setUserInput(e.target.value)}
                         placeholder="Type a message..."
                         className="flex-grow p-3 bg-slate-800 border border-slate-600 rounded-full focus:ring-2 focus:ring-violet-500 focus:outline-none text-slate-300 placeholder-slate-500 transition"
-                        disabled={isLoading}
+                        disabled={isLoading || !chat}
                     />
                     <button
                         type="submit"
-                        disabled={isLoading || !userInput.trim()}
+                        disabled={isLoading || !userInput.trim() || !chat}
                         className="flex items-center justify-center w-12 h-12 bg-violet-600 text-white font-semibold rounded-full hover:bg-violet-700 disabled:bg-slate-600 disabled:cursor-not-allowed transition-colors duration-200 flex-shrink-0"
                         aria-label="Send message"
                     >
