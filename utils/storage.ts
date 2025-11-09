@@ -1,7 +1,8 @@
-// A simple wrapper around localStorage to handle potential DOMExceptions
-// when localStorage is disabled or unavailable.
+// A unified storage utility that uses localStorage if available,
+// otherwise falls back to a non-persistent in-memory store.
+// This prevents crashes from DOMExceptions when storage is blocked.
 
-export const isLocalStorageAvailable = (): boolean => {
+const isLocalStorageAvailable = (): boolean => {
   try {
     const testKey = 'zenvibe_storage_test';
     localStorage.setItem(testKey, testKey);
@@ -12,27 +13,49 @@ export const isLocalStorageAvailable = (): boolean => {
   }
 };
 
-export const safeLocalStorageGet = (key: string): string | null => {
-  try {
-    return localStorage.getItem(key);
-  } catch (e) {
-    console.error(`Failed to read from localStorage: ${key}`, e);
-    return null;
-  }
-};
+interface AppStorage {
+  get(key: string): string | null;
+  set(key: string, value: string): void;
+  remove(key: string): void;
+}
 
-export const safeLocalStorageSet = (key: string, value: string): void => {
-  try {
-    localStorage.setItem(key, value);
-  } catch (e) {
-    console.error(`Failed to write to localStorage: ${key}`, e);
-  }
-};
+let storageImplementation: AppStorage;
 
-export const safeLocalStorageRemove = (key: string): void => {
-  try {
-    localStorage.removeItem(key);
-  } catch (e) {
-    console.error(`Failed to remove from localStorage: ${key}`, e);
-  }
-};
+if (isLocalStorageAvailable()) {
+  // Use localStorage with built-in error handling for each call
+  storageImplementation = {
+    get: (key) => {
+      try {
+        return localStorage.getItem(key);
+      } catch (e) {
+        console.error(`Failed to get item '${key}' from localStorage.`, e);
+        return null;
+      }
+    },
+    set: (key, value) => {
+      try {
+        localStorage.setItem(key, value);
+      } catch (e) {
+        console.error(`Failed to set item '${key}' in localStorage.`, e);
+      }
+    },
+    remove: (key) => {
+      try {
+        localStorage.removeItem(key);
+      } catch (e) {
+        console.error(`Failed to remove item '${key}' from localStorage.`, e);
+      }
+    },
+  };
+} else {
+  // Fallback to a simple in-memory object if localStorage is disabled
+  console.warn('localStorage is not available. App state will not be persisted.');
+  const inMemoryStore: Record<string, string> = {};
+  storageImplementation = {
+    get: (key) => inMemoryStore[key] || null,
+    set: (key, value) => { inMemoryStore[key] = value; },
+    remove: (key) => { delete inMemoryStore[key]; },
+  };
+}
+
+export const storage = storageImplementation;

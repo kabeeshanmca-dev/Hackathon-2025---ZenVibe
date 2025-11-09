@@ -8,11 +8,10 @@ import Help from './components/Help';
 import Chatbot from './components/Chatbot';
 import SignUp from './components/SignUp';
 import WellnessQuiz from './components/WellnessQuiz';
-import StorageWarning from './components/StorageWarning';
 import type { Post, Tab, User } from './types';
 import { generateSupportiveReply } from './services/geminiService';
 import { MOCK_USERS } from './constants';
-import { isLocalStorageAvailable, safeLocalStorageGet, safeLocalStorageSet, safeLocalStorageRemove } from './utils/storage';
+import { storage } from './utils/storage';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>('discussion');
@@ -21,23 +20,17 @@ const App: React.FC = () => {
   const [showQuiz, setShowQuiz] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState(0);
   const [isHelpLocked, setIsHelpLocked] = useState(false);
-  const [storageAvailable, setStorageAvailable] = useState(true);
   
   useEffect(() => {
-    if (!isLocalStorageAvailable()) {
-      setStorageAvailable(false);
-      return; // Don't attempt to load from storage if it's not available
-    }
-
-    // Check for logged in user in local storage
-    const savedUser = safeLocalStorageGet('zenVibeUser');
+    // Check for logged in user in storage (localStorage or in-memory fallback)
+    const savedUser = storage.get('zenVibeUser');
     if (savedUser) {
       try {
         const user = JSON.parse(savedUser);
         setCurrentUser(user);
         
         // Check for score
-        const savedScore = safeLocalStorageGet('zenVibeScore');
+        const savedScore = storage.get('zenVibeScore');
         if (savedScore) {
           setScore(parseFloat(savedScore));
         } else {
@@ -45,9 +38,9 @@ const App: React.FC = () => {
         }
 
       } catch (e) {
-        console.error("Failed to parse user from localStorage", e);
-        safeLocalStorageRemove('zenVibeUser');
-        safeLocalStorageRemove('zenVibeScore');
+        console.error("Failed to parse user from storage", e);
+        storage.remove('zenVibeUser');
+        storage.remove('zenVibeScore');
       }
     }
   }, []);
@@ -127,15 +120,15 @@ const App: React.FC = () => {
       avatarId,
     };
     setCurrentUser(newUser);
-    safeLocalStorageSet('zenVibeUser', JSON.stringify(newUser));
-    safeLocalStorageRemove('zenVibeScore');
+    storage.set('zenVibeUser', JSON.stringify(newUser));
+    storage.remove('zenVibeScore');
     setScore(null);
     setShowQuiz(true); // Show quiz for new users
   };
 
   const handleQuizComplete = (newScore: number) => {
     setScore(newScore);
-    safeLocalStorageSet('zenVibeScore', newScore.toString());
+    storage.set('zenVibeScore', newScore.toString());
     setShowQuiz(false);
   };
   
@@ -198,23 +191,16 @@ const App: React.FC = () => {
   };
 
   if (!currentUser) {
-    return <>
-      {!storageAvailable && <StorageWarning />}
-      <SignUp onLogin={handleLogin} />
-    </>;
+    return <SignUp onLogin={handleLogin} />;
   }
   
   if (showQuiz) {
-    return <>
-      {!storageAvailable && <StorageWarning />}
-      <WellnessQuiz onComplete={handleQuizComplete} />
-    </>;
+    return <WellnessQuiz onComplete={handleQuizComplete} />;
   }
   
   if (isHelpLocked) {
     return (
         <div className="bg-slate-900 text-slate-200 min-h-screen font-sans flex flex-col">
-            {!storageAvailable && <StorageWarning />}
             <main className="flex-grow container mx-auto px-4 py-8 flex items-center justify-center">
                 <div className="max-w-2xl mx-auto w-full">
                   <Help />
@@ -226,7 +212,6 @@ const App: React.FC = () => {
 
   return (
     <div className="bg-slate-900 text-slate-200 min-h-screen font-sans flex flex-col">
-      {!storageAvailable && <StorageWarning />}
       <Header score={score} onRetakeQuiz={handleRetakeQuiz} onlineUsers={onlineUsers} />
       <main className="flex-grow container mx-auto px-4 pt-4 pb-24 md:pt-8 md:pb-8">
         <div className="max-w-2xl mx-auto">
