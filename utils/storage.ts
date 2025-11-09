@@ -4,15 +4,20 @@
 // in browsers with strict privacy settings (e.g., private mode) where
 // direct access to `localStorage` is blocked.
 
-// When access is blocked, the browser throws a native `DOMException`. This code
-// explicitly catches that specific error and transparently falls back to a temporary,
-// in-memory storage for the current session. This directly addresses the "native DOMException"
-// concern by handling the browser's own built-in error mechanism gracefully.
+// The check is two-fold:
+// 1. It first checks if `localStorage` is even defined. This prevents a `ReferenceError`
+//    in non-browser environments, like during the build process on Vercel. This was the
+//    root cause of the deployment crash.
+// 2. If `localStorage` is defined, it then tries to use it. This `try/catch` block
+//    handles the native `DOMException` that browsers throw when storage access is
+//    blocked by user settings.
 
-// The `npm warn deprecated node-domexception` message seen during build is an unrelated
-// warning from an external dependency and does not affect this runtime crash prevention.
-
-const isLocalStorageAvailable = (): boolean => {
+export const isLocalStorageAvailable = (): boolean => {
+  // First, check if localStorage exists at all. This prevents a ReferenceError
+  // in server-side or build environments where the `window` object is not available.
+  if (typeof localStorage === 'undefined') {
+    return false;
+  }
   try {
     const testKey = 'zenvibe_storage_test';
     localStorage.setItem(testKey, testKey);

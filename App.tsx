@@ -8,10 +8,11 @@ import Help from './components/Help';
 import Chatbot from './components/Chatbot';
 import SignUp from './components/SignUp';
 import WellnessQuiz from './components/WellnessQuiz';
+import StorageWarning from './components/StorageWarning';
 import type { Post, Tab, User } from './types';
 import { generateSupportiveReply } from './services/geminiService';
 import { MOCK_USERS } from './constants';
-import { storage } from './utils/storage';
+import { storage, isLocalStorageAvailable } from './utils/storage';
 
 const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>('discussion');
@@ -20,8 +21,12 @@ const App: React.FC = () => {
   const [showQuiz, setShowQuiz] = useState(false);
   const [onlineUsers, setOnlineUsers] = useState(0);
   const [isHelpLocked, setIsHelpLocked] = useState(false);
+  const [storageIsPersisted, setStorageIsPersisted] = useState(true);
   
   useEffect(() => {
+    // Check if storage is persistent and show a warning if not.
+    setStorageIsPersisted(isLocalStorageAvailable());
+
     // Check for logged in user in storage (localStorage or in-memory fallback)
     const savedUser = storage.get('zenVibeUser');
     if (savedUser) {
@@ -212,6 +217,7 @@ const App: React.FC = () => {
 
   return (
     <div className="bg-slate-900 text-slate-200 min-h-screen font-sans flex flex-col">
+      {!storageIsPersisted && <StorageWarning />}
       <Header score={score} onRetakeQuiz={handleRetakeQuiz} onlineUsers={onlineUsers} />
       <main className="flex-grow container mx-auto px-4 pt-4 pb-24 md:pt-8 md:pb-8">
         <div className="max-w-2xl mx-auto">
