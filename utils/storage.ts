@@ -1,6 +1,7 @@
 // A unified storage utility that uses localStorage if available,
 // otherwise falls back to a non-persistent in-memory store.
-// This prevents crashes from DOMExceptions when storage is blocked.
+// This is critical for environments like Vercel or browsers in private mode
+// where localStorage access might be restricted, preventing runtime DOMException errors.
 
 const isLocalStorageAvailable = (): boolean => {
   try {
@@ -9,6 +10,7 @@ const isLocalStorageAvailable = (): boolean => {
     localStorage.removeItem(testKey);
     return true;
   } catch (e) {
+    // This catch block handles potential DOMException when localStorage is disabled.
     return false;
   }
 };
@@ -22,7 +24,8 @@ interface AppStorage {
 let storageImplementation: AppStorage;
 
 if (isLocalStorageAvailable()) {
-  // Use localStorage with built-in error handling for each call
+  // Use localStorage, but wrap each call in a try/catch as an extra safeguard.
+  // This handles edge cases like the storage quota being exceeded.
   storageImplementation = {
     get: (key) => {
       try {
@@ -48,8 +51,8 @@ if (isLocalStorageAvailable()) {
     },
   };
 } else {
-  // Fallback to a simple in-memory object if localStorage is disabled
-  console.warn('localStorage is not available. App state will not be persisted.');
+  // Fallback to a simple in-memory object if localStorage is not available.
+  console.warn('localStorage is not available. App state will not be persisted across page reloads.');
   const inMemoryStore: Record<string, string> = {};
   storageImplementation = {
     get: (key) => inMemoryStore[key] || null,
